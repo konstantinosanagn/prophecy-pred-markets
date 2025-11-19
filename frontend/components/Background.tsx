@@ -10,6 +10,7 @@ import ConfigurationPanel, {
   DEFAULT_CONFIG,
 } from "./background/ConfigurationPanel";
 import RecentSessions from "./background/RecentSessions";
+import { RecentRun } from "./background/RecentMarketCard";
 import { MarketSnapshotCard } from "../components/MarketSnapshotCard";
 import { NewsCard } from "../components/NewsCard";
 import SignalCard from "./background/SignalCard";
@@ -149,7 +150,7 @@ export default function Background(_props: PropsWithChildren): React.JSX.Element
   );
 
   // Handler to load a saved run from RecentSessions
-  const handleRunSelect = useCallback(async (run: { run_id?: string; _id?: string; [key: string]: unknown }) => {
+  const handleRunSelect = useCallback(async (run: RecentRun) => {
     const runIdToLoad = run.run_id || run._id;
     if (!runIdToLoad) {
       logger.error("No run_id or _id in selected run:", run);
