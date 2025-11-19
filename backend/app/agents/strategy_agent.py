@@ -72,10 +72,27 @@ def decide_action(signal: Signal, state: AgentState, params: dict[str, Any]) -> 
 
     # 2) Check confidence threshold
     conf_order = CONFIDENCE_ORDER
-    min_conf_order = conf_order.get(params.get("min_confidence", "medium"), 1)
+    min_confidence_param = params.get("min_confidence", "medium")
+    min_conf_order = conf_order.get(min_confidence_param, 1)
     signal_conf_order = conf_order.get(signal.confidence_level, 0)
 
+    logger.debug(
+        "Confidence check",
+        signal_confidence=signal.confidence_level,
+        signal_conf_order=signal_conf_order,
+        min_confidence=min_confidence_param,
+        min_conf_order=min_conf_order,
+        will_hold=signal_conf_order < min_conf_order,
+    )
+
     if signal_conf_order < min_conf_order:
+        logger.info(
+            "Signal confidence below minimum threshold - holding",
+            signal_confidence=signal.confidence_level,
+            min_confidence=min_confidence_param,
+            signal_conf_order=signal_conf_order,
+            min_conf_order=min_conf_order,
+        )
         signal.recommended_action = "hold"
         signal.recommended_size_fraction = 0.0
         return signal
@@ -155,6 +172,26 @@ async def run_strategy_agent(state: AgentState) -> AgentState:
 
     preset_base = _preset_defaults(preset)
     user_overrides = state.get("strategy_params", {}) or {}
+    
+    # Ensure min_confidence from config is always applied (enforces Minimum Confidence configuration)
+    # Priority: user_overrides (explicit strategy_params) > config > preset defaults
+    config = state.get("config", {}) or {}
+    if "min_confidence" in config:
+        # Config's min_confidence should override preset defaults, but not explicit user overrides
+        if "min_confidence" not in user_overrides:
+            user_overrides = {**user_overrides, "min_confidence": config["min_confidence"]}
+            logger.debug(
+                "Applied min_confidence from config",
+                min_confidence=config["min_confidence"],
+                preset=preset,
+            )
+        else:
+            logger.debug(
+                "Using min_confidence from strategy_params (overrides config)",
+                min_confidence=user_overrides["min_confidence"],
+                config_min_confidence=config.get("min_confidence"),
+            )
+    
     params = {**preset_base, **user_overrides}
 
     state["strategy_preset"] = preset

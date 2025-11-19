@@ -108,6 +108,9 @@ Return a JSON object with the following keys:
   (0–1 space) capturing how much you expect the price could move
   if the market corrected
 - "confidence": string, one of "low", "medium", "high"
+  * Use "high" only when you have strong, recent, and diverse evidence supporting your estimate
+  * Use "medium" when you have moderate evidence or some uncertainty
+  * Use "low" when evidence is sparse, conflicting, or the situation is highly uncertain
 - "rationale": a short 1–3 sentence explanation referencing the news
 """
 
