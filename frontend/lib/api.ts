@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 /**
  * Get the backend URL from environment variables or default to Elastic Beanstalk.
- * Falls back to localhost for local development.
+ * Production uses Elastic Beanstalk, development uses localhost.
  */
 export function getBackendUrl(): string {
   // Use BACKEND_URL environment variable if set (allows override)
@@ -14,12 +14,15 @@ export function getBackendUrl(): string {
     return process.env.BACKEND_URL;
   }
   
-  // In development mode, default to localhost
-  if (process.env.NODE_ENV === "development") {
+  // Production: Use Elastic Beanstalk backend
+  // Development: Use localhost for local development
+  const isDevelopment = process.env.NODE_ENV === "development";
+  
+  if (isDevelopment) {
     return "http://localhost:8000";
   }
   
-  // Default to Elastic Beanstalk backend for production
+  // Production default: Elastic Beanstalk backend
   return "https://tavily-backend-env.eba-jv6q9hd7.us-east-1.elasticbeanstalk.com";
 }
 
