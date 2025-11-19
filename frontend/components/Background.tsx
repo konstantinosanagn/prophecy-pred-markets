@@ -658,7 +658,7 @@ export default function Background(_props: PropsWithChildren): React.JSX.Element
         {/* Row 2, Col 1 - Recent Sessions */}
         <RecentSessions
           onRunSelect={handleRunSelect}
-          activeRunId={selectedRunId || runId}
+          activeRunId={(selectedRunId || runId) ?? undefined}
           refreshTrigger={recentSessionsRefreshTrigger}
         />
 
