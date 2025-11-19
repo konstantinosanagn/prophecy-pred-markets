@@ -173,7 +173,8 @@ async def run_strategy_agent(state: AgentState) -> AgentState:
     preset_base = _preset_defaults(preset)
     user_overrides = state.get("strategy_params", {}) or {}
     
-    # Ensure min_confidence from config is always applied (enforces Minimum Confidence configuration)
+    # Ensure min_confidence from config is always applied
+    # (enforces Minimum Confidence configuration)
     # Priority: user_overrides (explicit strategy_params) > config > preset defaults
     config = state.get("config", {}) or {}
     if "min_confidence" in config:

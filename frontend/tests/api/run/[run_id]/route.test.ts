@@ -32,7 +32,12 @@ describe("GET /api/run/[run_id]", () => {
 
   test("fetches run from backend successfully with sync params", async () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'development';
+    // Use Object.defineProperty to bypass TypeScript read-only check in tests
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true,
+    });
     
     const mockRequest = {} as any;
     const params = { run_id: "test-run-id" };
@@ -66,7 +71,12 @@ describe("GET /api/run/[run_id]", () => {
     );
 
     consoleLogSpy.mockRestore();
-    process.env.NODE_ENV = originalEnv;
+    // Restore original NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: originalEnv,
+      writable: true,
+      configurable: true,
+    });
   });
 
   test("fetches run from backend successfully with async params", async () => {
@@ -324,7 +334,12 @@ describe("GET /api/run/[run_id]", () => {
 
   test("logs run_id when fetching", async () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'development';
+    // Use Object.defineProperty to bypass TypeScript read-only check in tests
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true,
+    });
     
     const mockRequest = {} as any;
     const params = { run_id: "test-run-id" };
@@ -346,7 +361,12 @@ describe("GET /api/run/[run_id]", () => {
     );
 
     consoleLogSpy.mockRestore();
-    process.env.NODE_ENV = originalEnv;
+    // Restore original NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: originalEnv,
+      writable: true,
+      configurable: true,
+    });
   });
 
   test("handles empty text response in error", async () => {

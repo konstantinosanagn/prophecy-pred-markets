@@ -32,7 +32,12 @@ describe("POST /api/analyze/start", () => {
 
   test("proxies request to backend successfully", async () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'development';
+    // Use Object.defineProperty to bypass TypeScript read-only check in tests
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true,
+    });
     
     const mockRequest = {
       json: jest.fn().mockResolvedValue({ url: "https://polymarket.com/event/123" }),
@@ -73,7 +78,12 @@ describe("POST /api/analyze/start", () => {
     );
 
     consoleLogSpy.mockRestore();
-    process.env.NODE_ENV = originalEnv;
+    // Restore original NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: originalEnv,
+      writable: true,
+      configurable: true,
+    });
   });
 
   test("uses BACKEND_URL from environment", async () => {

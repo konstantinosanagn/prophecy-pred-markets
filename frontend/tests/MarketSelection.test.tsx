@@ -213,7 +213,7 @@ describe("MarketSelection Component", () => {
   test("handles image load error", () => {
     render(<MarketSelection {...defaultProps} />);
     const images = screen.getAllByRole("img");
-    const marketImage = images.find((img) => img.alt === "Market");
+    const marketImage = images.find((img) => (img as HTMLImageElement).alt === "Market");
     if (marketImage) {
       fireEvent.error(marketImage);
       expect(marketImage).toHaveStyle({ display: "none" });
@@ -223,7 +223,7 @@ describe("MarketSelection Component", () => {
   test("handles event image load error", () => {
     render(<MarketSelection {...defaultProps} />);
     const images = screen.getAllByRole("img");
-    const eventImage = images.find((img) => img.alt === "Event");
+    const eventImage = images.find((img) => (img as HTMLImageElement).alt === "Event");
     if (eventImage) {
       fireEvent.error(eventImage);
       expect(eventImage).toHaveStyle({ display: "none" });
@@ -482,7 +482,7 @@ describe("MarketSelection Component", () => {
   test("handles market image load error", () => {
     render(<MarketSelection {...defaultProps} />);
     const images = screen.getAllByRole("img");
-    const marketImage = images.find((img) => img.alt === "Market");
+    const marketImage = images.find((img) => (img as HTMLImageElement).alt === "Market");
     if (marketImage) {
       fireEvent.error(marketImage);
       expect(marketImage).toHaveStyle({ display: "none" });
@@ -492,7 +492,7 @@ describe("MarketSelection Component", () => {
   test("handles event image load error", () => {
     render(<MarketSelection {...defaultProps} />);
     const images = screen.getAllByRole("img");
-    const eventImage = images.find((img) => img.alt === "Event");
+    const eventImage = images.find((img) => (img as HTMLImageElement).alt === "Event");
     if (eventImage) {
       fireEvent.error(eventImage);
       expect(eventImage).toHaveStyle({ display: "none" });

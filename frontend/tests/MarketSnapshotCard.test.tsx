@@ -223,7 +223,7 @@ describe("MarketSnapshotCard", () => {
     render(<MarketSnapshotCard {...defaultProps} />);
     
     const images = screen.getAllByRole("img");
-    const favicon = images.find(img => img.alt === "Polymarket");
+    const favicon = images.find(img => (img as HTMLImageElement).alt === "Polymarket");
     
     if (favicon) {
       fireEvent.error(favicon);

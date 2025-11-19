@@ -77,7 +77,7 @@ describe("SignalCard Component", () => {
 
   test("handles null and undefined values in formatPct", () => {
     const signal = {
-      market_prob: null,
+      market_prob: undefined,
       model_prob: undefined,
       edge_pct: NaN,
       kelly_fraction_yes: 0.2,
