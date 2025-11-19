@@ -244,12 +244,16 @@ backend/__pycache__/
 backend/*.pyc
 backend/.pytest_cache/
 backend/backend-*.zip
+backend/tavily-backend-*.zip
 backend/dev_config.py
 
 # Backend coverage reports
 backend/htmlcov/
 backend/.coverage
 backend/.coverage.*
+
+# Utility scripts (optional - keep local but don't commit)
+backend/create_zip.py
 
 # -----------------------------------------------------------------------------
 # Deployment & Infrastructure
