@@ -29,7 +29,9 @@ dist/
 downloads/
 eggs/
 .eggs/
+# Python lib directories (but not frontend/lib/)
 lib/
+!frontend/lib/
 lib64/
 parts/
 sdist/
@@ -108,6 +110,10 @@ frontend/dist/
 frontend/build/
 frontend/.cache/
 frontend/*.tsbuildinfo
+
+# Vercel (but keep vercel.json)
+.vercel
+!.vercel/project.json
 
 # Frontend environment files
 frontend/.env.local
