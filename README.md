@@ -5,7 +5,7 @@ Multi-agent prediction market analysis system that uses AI agents to analyze Pol
 ## Overview
 
 This MVP application provides automated analysis and signal generation for Polymarket prediction markets. It aggregates news from Tavily API, processes market data, and generates trading signals using OpenAI's language models. Analysis results are stored in MongoDB and displayed in a Next.js dashboard.
-
+ 
 ### Key Features
 
 - **Multi-Agent Analysis**: Orchestrated analysis using specialized AI agents for market data, news aggregation, signal generation, and reporting
