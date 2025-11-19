@@ -1,43 +1,69 @@
-# Tavily Polymarket Signals
+# Prophily
 
-Multi-agent prediction market analysis system that uses AI agents to analyze Polymarket prediction markets and generate trading signals.
+A multi-agent AI system that analyzes Polymarket prediction markets and generates intelligent trading signals by combining real-time market data, news aggregation, and AI-powered analysis.
 
-## Overview
+## Project Summary and Motivation
 
-This MVP application provides automated analysis and signal generation for Polymarket prediction markets. It aggregates news from Tavily API, processes market data, and generates trading signals using OpenAI's language models. Analysis results are stored in MongoDB and displayed in a Next.js dashboard.
- 
-### Key Features
+**Prophily** is an automated analysis platform for prediction markets that leverages specialized AI agents to process market data, aggregate relevant news, and generate actionable trading signals with confidence levels and risk-adjusted sizing recommendations.
 
-- **Multi-Agent Analysis**: Orchestrated analysis using specialized AI agents for market data, news aggregation, signal generation, and reporting
-- **Real-Time Processing**: Asynchronous phased analysis that processes markets through multiple stages
-- **News Integration**: Aggregates relevant news articles from Tavily API based on market context
-- **Signal Generation**: AI-powered trading signals with confidence levels and rationale
-- **Market History**: Stores and displays historical analysis snapshots for backtesting
-- **Interactive Dashboard**: Modern Next.js frontend with real-time polling and market selection
+### Why This Project?
+
+Prediction markets contain a lot of information, but turning a single market URL into a *clear, actionable, and explainable* view is still very manual:
+
+- You have to understand the contract details and resolution criteria.
+- You have to read news, macro context, and on-chain / platform-specific details.
+- You have to translate all of that into a probability, an edge vs current prices, and a position size.
+
+This system automates the analysis process by:
+
+- **Aggregating Context**: Automatically fetches relevant news articles from Tavily API based on market context
+- **AI-Powered Analysis**: Uses OpenAI's language models to synthesize market data, news, and probabilities into coherent signals
+- **Risk Management**: Incorporates Kelly Criterion sizing and confidence-based filtering
+- **Historical Tracking**: Stores all analysis runs in MongoDB for future backtesting and performance evaluation
+
+### Key Capabilities
+
+- **Multi-Agent Orchestration**: Specialized AI agents handle market data, news aggregation, signal generation, and reporting
+- **Real-Time Phased Analysis**: Asynchronous processing that updates results incrementally as analysis progresses
+- **Market Intelligence**: Combines Polymarket market data with Tavily news aggregation and sentiment analysis
+- **Trading Signals**: Generates directional signals (up/down/flat) with confidence levels, edge calculations, and Kelly sizing recommendations
+- **Interactive Dashboard**: Modern Next.js frontend with real-time polling and market selection for events with multiple markets
 
 ## Architecture
 
-- **Backend**: FastAPI (Python 3.11) with async/await patterns
-- **Frontend**: Next.js 16 with TypeScript and Tailwind CSS
-- **Database**: MongoDB Atlas for persistent storage
-- **Cache**: Redis (optional) or in-memory caching
-- **APIs**: Integration with Polymarket Gamma API, Tavily Search API, and OpenAI API
-
-See [docs/architecture.md](docs/architecture.md) for detailed architecture information.
+- **Backend**: FastAPI (Python 3.11) with async/await patterns, deployed on AWS Elastic Beanstalk
+- **Frontend**: Next.js 16 with TypeScript and Tailwind CSS, deployed on Vercel
+- **Database**: MongoDB Atlas for persistent storage of analysis runs and market history
+- **Cache**: Redis (optional) or in-memory caching for API responses
+- **External APIs**: 
+  - Polymarket Gamma API (market data)
+  - Tavily Search API (news aggregation)
+  - OpenAI API (AI analysis and signal generation)
 
 ## Prerequisites
+
+Before you begin, ensure you have the following installed:
 
 - **Python**: 3.11 or higher
 - **Node.js**: 18.x or higher
 - **npm**: 9.x or higher (or compatible package manager)
 - **MongoDB**: MongoDB Atlas account (free tier works) or local MongoDB instance
-- **API Keys**:
-  - OpenAI API key (required)
-  - Tavily API key (required)
-  - MongoDB connection string (required)
-  - Redis (optional, for production)
 
-## Installation
+### Required API Keys
+
+You'll need API keys for the following services:
+
+1. **OpenAI API Key** (required) - For AI-powered analysis and signal generation
+
+2. **Tavily API Key** (required) - For news aggregation
+
+3. **MongoDB Connection String** (required) - For data persistence
+
+4. **Redis** (optional) - For production caching
+
+**Note**: These are provided in the deployed version for the purposes of the assignment as env vars in AWS Beanstalk
+
+## Setup and Installation Instructions
 
 ### 1. Clone the Repository
 
@@ -48,12 +74,18 @@ cd tavily-proj
 
 ### 2. Backend Setup
 
+Navigate to the backend directory and install Python dependencies:
+
 ```bash
 cd backend
 python -m pip install -r requirements.txt
 ```
 
+**Note**: The backend dependencies are managed in `backend/requirements.txt` for service-specific documentation.
+
 ### 3. Frontend Setup
+
+Navigate to the frontend directory and install Node.js dependencies:
 
 ```bash
 cd frontend
@@ -62,7 +94,7 @@ npm install
 
 ### 4. Environment Configuration
 
-Create a `.env` file in the project root (see `.env.example` for template):
+Create a `.env` file in the project root directory with the following variables:
 
 ```bash
 # Required API Keys
@@ -75,9 +107,139 @@ LOG_LEVEL=INFO
 USE_REDIS_CACHE=false
 REDIS_URL=redis://localhost:6379/0
 CORS_ORIGINS=http://localhost:3000
+ENVIRONMENT=development
 ```
 
-**Important**: The `.env` file is gitignored. Never commit API keys to version control.
+### 5. Verify Installation
+
+**Backend**:
+```bash
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+Visit `http://localhost:8000/docs` to see the API documentation.
+
+**Frontend**:
+```bash
+cd frontend
+npm run dev
+```
+
+Visit `http://localhost:3000` to see the dashboard.
+
+## Usage Examples
+
+### Basic Analysis
+
+1. **Start both backend and frontend** (see Development section below)
+
+2. **Open the dashboard** at `http://localhost:3000`
+
+3. **Paste a Polymarket URL** into the input field:
+   ```
+   https://polymarket.com/event/fed-decision-in-december
+   ```
+   - Supports both event URLs and direct market URLs
+   - If an event has multiple markets, you'll be prompted to select one
+
+4. **View results** as the analysis progresses through phases:
+   - **Phase 1**: Market snapshot (current prices, volume, liquidity)
+   - **Phase 2**: News context (aggregated relevant articles with sentiment)
+   - **Phase 3**: Trading signal (direction, confidence, rationale, Kelly sizing)
+   - **Phase 4**: Final report (comprehensive analysis with bull/bear cases)
+
+### API Usage
+
+#### Start Analysis (Asynchronous)
+
+```bash
+curl -X POST http://localhost:8000/api/analyze/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "market_url": "https://polymarket.com/event/fed-decision-in-december",
+    "horizon": "24h",
+    "strategy_preset": "Balanced"
+  }'
+```
+
+Response:
+```json
+{
+  "run_id": "run-abc123..."
+}
+```
+
+#### Poll for Results
+
+```bash
+curl http://localhost:8000/api/run/run-abc123...
+```
+
+The response includes phased status and partial results:
+```json
+{
+  "run": {
+    "run_id": "run-abc123...",
+    "status": {
+      "market": "done",
+      "news": "done",
+      "signal": "pending",
+      "report": "pending"
+    },
+    "market_snapshot": { ... },
+    "news_context": { ... },
+    "signal": { ... },
+    "report": { ... }
+  }
+}
+```
+
+#### Synchronous Analysis (Legacy)
+
+```bash
+curl -X POST http://localhost:8000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "market_url": "https://polymarket.com/event/fed-decision-in-december",
+    "horizon": "24h",
+    "strategy_preset": "Balanced"
+  }'
+```
+
+Returns complete analysis in a single response (may take 30-60 seconds).
+
+### Configuration Options
+
+You can customize the analysis behavior:
+
+```json
+{
+  "market_url": "https://polymarket.com/event/...",
+  "horizon": "24h",
+  "strategy_preset": "Balanced",
+  "configuration": {
+    "use_tavily_prompt_agent": true,
+    "use_news_summary_agent": true,
+    "max_articles": 15,
+    "max_articles_per_query": 8,
+    "min_confidence": "medium",
+    "enable_sentiment_analysis": true
+  }
+}
+```
+
+### Strategy Presets
+
+- **Cautious**: Lower risk, higher confidence requirements
+- **Balanced**: Moderate risk and confidence (default)
+- **Aggressive**: Higher risk tolerance, accepts lower confidence signals
+
+### Time Horizons
+
+- **intraday**: Analysis for same-day trading
+- **24h**: Analysis for next 24 hours (default)
+- **resolution**: Analysis until market resolution
 
 ## Development
 
@@ -121,57 +283,23 @@ The repository includes helper scripts in the `scripts/` directory:
 ./scripts/frontend/start.sh   # Start frontend
 ```
 
-See [scripts/README.md](scripts/README.md) for more details.
+### Testing
 
-## Testing
-
-### Backend Tests
-
-From the `backend/` directory:
-
+**Backend Tests:**
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/test_config.py -v
+cd backend
+pytest                    # Run all tests
+pytest --cov=app          # Run with coverage
+pytest tests/test_config.py -v  # Run specific test
 ```
 
-### Frontend Tests
-
-From the `frontend/` directory:
-
+**Frontend Tests:**
 ```bash
-# Run all tests
-npm test
-
-# Run with coverage
-npm run test:coverage
-
-# Run in watch mode
-npm test -- --watch
+cd frontend
+npm test                  # Run all tests
+npm run test:coverage    # Run with coverage
+npm test -- --watch      # Run in watch mode
 ```
-
-## Usage
-
-1. **Start both backend and frontend** (see Development section above)
-
-2. **Open the dashboard** at `http://localhost:3000`
-
-3. **Paste a Polymarket URL** into the input field:
-   - Example: `https://polymarket.com/event/...`
-   - Supports both event URLs and direct market URLs
-
-4. **Select a market** (if multiple markets are available for the event)
-
-5. **View results** as the analysis progresses through phases:
-   - Market snapshot (current prices, volume, liquidity)
-   - News context (aggregated relevant articles)
-   - Trading signal (direction, confidence, rationale)
-   - Final report (comprehensive analysis)
 
 ## API Documentation
 
@@ -181,32 +309,56 @@ Once the backend is running, visit:
 
 ### Main Endpoints
 
-- `POST /api/analyze/start` - Start analysis for a market URL
-- `GET /api/run/{run_id}` - Get analysis results for a run
-- `GET /api/analyze` - Legacy synchronous analysis endpoint
+- `POST /api/analyze/start` - Start asynchronous analysis for a market URL
+- `GET /api/run/{run_id}` - Get analysis results for a run (supports polling)
+- `POST /api/analyze` - Legacy synchronous analysis endpoint
+- `GET /api/runs/recent` - List recent analysis runs
 - `GET /health` - Health check endpoint
 - `GET /health/ready` - Readiness probe with dependency checks
 
 ## Deployment
 
-### Backend Deployment
+### Backend Deployment (AWS Elastic Beanstalk)
 
 The backend is configured for deployment on AWS Elastic Beanstalk:
 
-- `Procfile` - Defines the web server process
-- `runtime.txt` - Specifies Python version
+- `Procfile` - Defines the web server process (gunicorn with uvicorn workers)
+- `runtime.txt` - Specifies Python 3.11
 - `requirements.txt` - Python dependencies
 
-See [docs/deployment.md](docs/deployment.md) for detailed deployment instructions.
+**Deployment Steps:**
 
-### Frontend Deployment
+1. Create an Elastic Beanstalk application and environment (Python 3.11)
+2. Set environment variables in the Elastic Beanstalk console:
+   - `OPENAI_API_KEY`
+   - `TAVILY_API_KEY`
+   - `MONGODB_URI`
+   - `USE_REDIS_CACHE` (optional)
+   - `REDIS_URL` (if using Redis)
+   - `CORS_ORIGINS` (your frontend domain)
+   - `ENVIRONMENT=production`
+3. Deploy using EB CLI or zip upload:
+   ```bash
+   cd backend
+   python create_zip.py  # Creates deployment package
+   # Upload to Elastic Beanstalk
+   ```
 
-The frontend can be deployed on:
-- **Vercel** (recommended for Next.js)
-- **Netlify**
-- Any Node.js hosting platform
+### Frontend Deployment (Vercel)
 
-Set the `BACKEND_URL` environment variable to your backend URL in production.
+The frontend is optimized for Vercel deployment:
+
+1. Connect your repository to Vercel
+2. Set environment variables:
+   - `BACKEND_URL` - Your Elastic Beanstalk backend URL
+   - `NODE_ENV=production`
+3. Deploy automatically on push or manually via Vercel CLI
+
+**Vercel CLI:**
+```bash
+cd frontend
+vercel --prod
+```
 
 ### Environment Variables for Production
 
@@ -221,7 +373,93 @@ USE_REDIS_CACHE=true
 REDIS_URL=your_redis_connection_string
 CORS_ORIGINS=https://your-frontend-domain.com
 LOG_LEVEL=WARNING
+ENVIRONMENT=production
 ```
+
+## Project Structure
+
+```
+tavily-proj/
+├── backend/                    # FastAPI backend application
+│   ├── app/
+│   │   ├── agents/            # Multi-agent orchestration
+│   │   │   ├── graph.py      # Main analysis graph
+│   │   │   ├── market_agent.py
+│   │   │   ├── event_agent.py
+│   │   │   ├── news_agent.py
+│   │   │   ├── prob_agent.py
+│   │   │   ├── strategy_agent.py
+│   │   │   └── report_agent.py
+│   │   ├── core/              # Core utilities
+│   │   │   ├── cache.py
+│   │   │   ├── logging_config.py
+│   │   │   ├── resilience.py
+│   │   │   └── sentiment_analyzer.py
+│   │   ├── db/                # Database layer
+│   │   │   ├── async_client.py
+│   │   │   ├── async_repositories.py
+│   │   │   └── models.py
+│   │   ├── routes/            # FastAPI route handlers
+│   │   │   ├── analyze.py
+│   │   │   └── runs.py
+│   │   ├── schemas/           # Pydantic models
+│   │   │   └── api.py
+│   │   ├── services/          # Business logic
+│   │   │   ├── phased_analysis.py
+│   │   │   └── run_snapshot.py
+│   │   ├── config.py          # Configuration
+│   │   └── main.py            # FastAPI app entry point
+│   ├── tests/                 # Backend tests
+│   ├── requirements.txt       # Python dependencies
+│   ├── Procfile              # Elastic Beanstalk process definition
+│   └── runtime.txt           # Python version
+├── frontend/                   # Next.js frontend application
+│   ├── app/                   # Next.js App Router pages
+│   │   ├── api/              # API route handlers (proxies to backend)
+│   │   ├── markets/          # Market detail pages
+│   │   └── page.tsx          # Main dashboard page
+│   ├── components/           # React components
+│   │   ├── background/      # Main UI components
+│   │   └── skeletons/       # Loading skeletons
+│   ├── lib/                 # Utilities
+│   │   ├── api.ts           # API client helpers
+│   │   └── logger.ts        # Logging utilities
+│   ├── tests/               # Frontend tests
+│   └── package.json         # Node.js dependencies
+├── docs/                     # Additional documentation
+│   ├── architecture.md
+│   ├── data_model.md
+│   └── deployment.md
+├── scripts/                  # Helper scripts
+│   ├── backend/
+│   └── frontend/
+├── .env.example             # Environment variable template
+└── README.md               # This file
+```
+
+## Dependency Management
+
+### Backend Dependencies
+
+Backend dependencies are managed in `backend/requirements.txt`:
+
+- **Web Framework**: FastAPI, Uvicorn, Gunicorn
+- **Database**: Motor (async MongoDB driver), PyMongo
+- **HTTP Clients**: aiohttp, requests
+- **AI/ML**: OpenAI Python SDK
+- **Utilities**: Pydantic, structlog, tenacity (retries), python-dotenv
+- **Cache**: Redis (optional)
+- **Testing**: pytest, pytest-asyncio, pytest-cov
+
+### Frontend Dependencies
+
+Frontend dependencies are managed in `frontend/package.json`:
+
+- **Framework**: Next.js 16, React 19
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Testing**: Jest, React Testing Library
+- **Type Safety**: TypeScript
 
 ## Troubleshooting
 
@@ -231,11 +469,13 @@ LOG_LEVEL=WARNING
 - Verify `MONGODB_URI` is correct in `.env`
 - Check network connectivity to MongoDB Atlas
 - Verify MongoDB credentials are valid
+- Ensure IP whitelist includes your server IP
 
 **OpenAI API Errors**
 - Check `OPENAI_API_KEY` is set correctly
 - Verify API key has sufficient credits/quota
 - Check circuit breaker status (may need reset if open)
+- Reset circuit breaker: `POST /api/reset-circuit-breaker`
 
 **Import Errors**
 - Ensure you're in the `backend/` directory when running commands
@@ -253,11 +493,7 @@ LOG_LEVEL=WARNING
 - Verify backend is running on `http://localhost:8000`
 - Check `BACKEND_URL` environment variable if using custom backend URL
 - Verify CORS is configured correctly in backend
-
-**Type Errors After Enabling Strict Mode**
-- TypeScript strict mode is enabled. Fix any type errors that appear
-- Use type assertions or optional chaining where needed
-- Ensure all interfaces match actual data structures
+- Check browser console for detailed error messages
 
 ### Common Issues
 
@@ -274,69 +510,45 @@ LOG_LEVEL=WARNING
 - System will fall back to in-memory cache if Redis unavailable
 - Check Redis connection string format: `redis://host:port/db`
 
-## Project Structure
+## Contribution Guidelines
 
-```
-tavily-proj/
-├── backend/
-│   ├── app/
-│   │   ├── agents/        # Multi-agent orchestration
-│   │   ├── core/          # Core utilities (cache, logging, resilience)
-│   │   ├── db/            # Database clients and repositories
-│   │   ├── routes/        # FastAPI route handlers
-│   │   ├── schemas/       # Pydantic models
-│   │   └── services/      # Business logic services
-│   ├── tests/             # Backend tests
-│   ├── requirements.txt   # Python dependencies
-│   ├── Procfile          # Deployment configuration
-│   └── runtime.txt       # Python version
-├── frontend/
-│   ├── app/              # Next.js App Router pages
-│   ├── components/       # React components
-│   ├── tests/            # Frontend tests
-│   └── package.json      # Node.js dependencies
-├── docs/                 # Documentation
-├── scripts/              # Helper scripts
-├── .env.example          # Environment variable template
-└── README.md            # This file
-```
+Contributions are welcome! Please follow these guidelines:
+
+1. **Fork the repository** and create a feature branch
+2. **Follow code style**:
+   - Backend: Follow PEP 8, use type hints, async/await patterns
+   - Frontend: Follow ESLint rules, use TypeScript strictly
+3. **Write tests** for new features and ensure all tests pass
+4. **Update documentation** as needed
+5. **Submit a pull request** with a clear description of changes
+
+### Development Workflow
+
+1. Create an issue or discuss the feature first
+2. Create a branch from `main`: `git checkout -b feature/your-feature`
+3. Make your changes and write tests
+4. Ensure all tests pass: `pytest` (backend) and `npm test` (frontend)
+5. Update documentation if needed
+6. Submit a pull request
+
+### Code Review Process
+
+- All pull requests require review before merging
+- Ensure CI/CD checks pass
+- Address any feedback from reviewers
+- Maintain backward compatibility when possible
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## MVP Scope
+## Additional Resources
 
-### Completed Features ✅
-
-- **Multi-Agent Analysis System**: Orchestrated analysis using specialized AI agents
-- **Market Data Integration**: Real-time Polymarket market data fetching and processing
-- **News Aggregation**: Tavily API integration for relevant news articles
-- **Signal Generation**: AI-powered trading signals with confidence levels and rationale
-- **Phased Analysis**: Asynchronous processing through market → news → signal → report phases
-- **Market Selection**: Support for events with multiple markets
-- **Interactive Dashboard**: Next.js frontend with real-time polling and status updates
-- **Data Persistence**: MongoDB storage for analysis runs and history
-- **Error Handling**: Circuit breaker pattern for API resilience
-- **Comprehensive Testing**: 34+ backend tests and 13+ frontend tests
-
-### Incomplete Features / Future Work 🚧
-
-The following features have TODO comments in the codebase and are planned for future development:
-
-- **Outcome Extraction**: Market resolution tracking for IR value evaluation (`backend/scripts/evaluate_ir_value.py`)
-
-### Known Limitations
-
-- **No User Authentication**: MVP does not include user accounts or authentication
-- **No Rate Limiting**: API endpoints do not have rate limiting (recommended for production)
-- **Debug Endpoint**: `/debug/polymarket/{slug}` endpoint exists for development (consider disabling in production)
-- **In-Memory Cache Default**: Uses in-memory caching by default (Redis optional)
-
-## Additional Documentation
-
-- [Architecture](docs/architecture.md) - System architecture and design
+- [Architecture Documentation](docs/architecture.md) - System architecture and design
 - [Data Model](docs/data_model.md) - Database schema and data structures
-- [Deployment](docs/deployment.md) - Deployment instructions
-- [Use Case](docs/use_case.md) - Use case and workflow description
-- [Development Notes](docs/README_DEV.md) - Development server setup and tips
+- [Deployment Guide](docs/deployment.md) - Detailed deployment instructions
+- [Use Case Documentation](docs/use_case.md) - Use case and workflow description
+
+## Support
+
+For issues, questions, or contributions, please open an issue on the repository.

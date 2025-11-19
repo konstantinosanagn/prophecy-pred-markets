@@ -19,6 +19,13 @@ from app.db.models import (
 
 if TYPE_CHECKING:
     from app.agents.tavily_prompt_agent import TavilyQuerySpec
+else:
+    # Import at runtime for LangGraph type hint evaluation
+    try:
+        from app.agents.tavily_prompt_agent import TavilyQuerySpec
+    except ImportError:
+        # Fallback if import fails (shouldn't happen in normal usage)
+        TavilyQuerySpec = Any  # type: ignore[assignment,misc]
 
 
 class TracePayload(TypedDict, total=False):

@@ -252,6 +252,11 @@ backend/htmlcov/
 backend/.coverage
 backend/.coverage.*
 
+# Generated graph visualizations
+backend/analysis_graph.png
+backend/analysis_graph.mmd
+*.mmd
+
 # Utility scripts (optional - keep local but don't commit)
 backend/create_zip.py
 
