@@ -26,21 +26,21 @@ export async function GET(request: NextRequest) {
       
       clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const errorData = await parseErrorResponse(response);
-      return NextResponse.json(
-        {
-          error: `Backend error: ${response.status}`,
-          detail:
-            (errorData.detail as string) ||
-            (errorData.error as string) ||
-            (errorData.message as string) ||
-            "Unknown error",
-          details: errorData,
-        },
-        { status: response.status },
-      );
-    }
+      if (!response.ok) {
+        const errorData = await parseErrorResponse(response);
+        return NextResponse.json(
+          {
+            error: `Backend error: ${response.status}`,
+            detail:
+              (errorData.detail as string) ||
+              (errorData.error as string) ||
+              (errorData.message as string) ||
+              "Unknown error",
+            details: errorData,
+          },
+          { status: response.status },
+        );
+      }
 
       const data = await response.json();
       return NextResponse.json(data);
