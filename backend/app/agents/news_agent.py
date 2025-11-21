@@ -122,6 +122,21 @@ async def run_news_agent(state: AgentState) -> AgentState:
     This agent now depends on tavily_prompt_agent for query generation,
     but falls back to simple queries if tavily_queries is not available.
     """
+    # Check Tavily API key configuration
+    from app.services.tavily_client import TAVILY_API_KEY
+    
+    if not TAVILY_API_KEY:
+        logger.error(
+            "TAVILY_API_KEY is not configured - news agent cannot fetch articles",
+            run_id=state.get("run_id"),
+        )
+    else:
+        logger.debug(
+            "Tavily API key is configured",
+            run_id=state.get("run_id"),
+            key_length=len(TAVILY_API_KEY) if TAVILY_API_KEY else 0,
+        )
+    
     # Get configuration early
     config = state.get("config", {})
 
@@ -205,13 +220,37 @@ async def run_news_agent(state: AgentState) -> AgentState:
                 query=query,
             )
 
-        result = await search_news(query, max_results=max_results, search_depth=search_depth)
-        answer = result.get("answer")
-        if isinstance(answer, str) and answer.strip():
-            answers.append(answer)
+        try:
+            result = await search_news(query, max_results=max_results, search_depth=search_depth)
+            answer = result.get("answer")
+            if isinstance(answer, str) and answer.strip():
+                answers.append(answer)
 
-        articles = result.get("articles") or []
-        all_articles.extend(articles)
+            articles = result.get("articles") or []
+            if not articles:
+                logger.warning(
+                    "Tavily search returned no articles",
+                    query=query,
+                    max_results=max_results,
+                    has_answer=bool(answer),
+                )
+            else:
+                logger.debug(
+                    "Tavily search successful",
+                    query=query,
+                    articles_count=len(articles),
+                )
+            all_articles.extend(articles)
+        except Exception as e:
+            logger.error(
+                "Failed to search Tavily for query",
+                query=query,
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True,
+            )
+            # Continue with other queries even if one fails
+            continue
 
         # Store structured result
         query_results.append(
@@ -273,22 +312,68 @@ async def run_news_agent(state: AgentState) -> AgentState:
     max_articles_config = config.get("max_articles", 15)
     articles_for_context = deduped_with_sentiment[:max_articles_config]
 
+    # Generate combined summary
+    combined_summary = _summarize_news_brief(query_results)
+    
+    # If no articles found, provide a helpful message
+    if not articles_for_context:
+        logger.warning(
+            "News agent completed with no articles",
+            query_count=len(query_specs),
+            queries=query_strings,
+            using_llm_queries=using_llm_queries,
+        )
+        # Ensure we have at least a basic summary even if no articles
+        if not combined_summary or combined_summary.strip() == "":
+            event_title = (
+                event_ctx.get("title")
+                or event_data.get("title")
+                or market_snapshot.get("question")
+                or "this event"
+            )
+            combined_summary = (
+                f"No recent news articles found for {event_title}. "
+                "This may indicate limited coverage or the event is too recent."
+            )
+
     # Note: Summary generation is now handled by news_summary_agent
     # We set a placeholder here; news_summary_agent will populate it
     state["news_context"] = {
         "tavily_queries": query_strings,  # Backward compatibility: list of query strings
         "queries": query_results,  # New: structured query results with metadata
         # Brief summary of collected queries
-        "combined_summary": _summarize_news_brief(query_results),
+        "combined_summary": combined_summary,
         "articles": articles_for_context,  # Articles with sentiment analysis (up to 15)
         # Summary will be populated by news_summary_agent
     }
 
     logger.info(
         "News agent completed",
+        run_id=state.get("run_id"),
         query_count=len(query_specs),
         articles_found=len(deduped_with_sentiment),
+        articles_in_context=len(articles_for_context),
         using_llm_queries=using_llm_queries,
+        has_summary=bool(combined_summary),
+        news_context_keys=list(state.get("news_context", {}).keys()),
     )
+    
+    # Log detailed article info for debugging
+    if articles_for_context:
+        logger.debug(
+            "News articles collected",
+            run_id=state.get("run_id"),
+            article_titles=[a.get("title", "N/A")[:50] for a in articles_for_context[:3]],
+            total_articles=len(articles_for_context),
+        )
+    else:
+        logger.warning(
+            "News agent completed with NO articles",
+            run_id=state.get("run_id"),
+            query_count=len(query_specs),
+            queries=[q.get("query", "N/A")[:50] for q in query_specs],
+            all_articles_count=len(all_articles),
+            deduped_count=len(deduped_with_sentiment),
+        )
 
     return state

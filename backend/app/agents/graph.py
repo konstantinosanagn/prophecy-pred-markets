@@ -44,7 +44,15 @@ async def tavily_prompt_agent_node(state: AgentState) -> AgentState:
 
 async def news_agent_node(state: AgentState) -> AgentState:
     """News agent node."""
-    return await run_news_agent(state)
+    logger.info("Executing news_agent node in LangGraph", run_id=state.get("run_id"))
+    result = await run_news_agent(state)
+    logger.info(
+        "news_agent node completed",
+        run_id=state.get("run_id"),
+        has_news_context=bool(result.get("news_context")),
+        articles_count=len(result.get("news_context", {}).get("articles", [])) if result.get("news_context") else 0,
+    )
+    return result
 
 
 async def news_summary_agent_node(state: AgentState) -> AgentState:

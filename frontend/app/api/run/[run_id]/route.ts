@@ -21,15 +21,23 @@ export async function GET(
       );
     }
 
-    const response = await fetch(
-      `${getBackendUrl()}/api/run/${encodeURIComponent(run_id)}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+    // Add timeout to prevent hanging requests (60 seconds for run status checks)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    
+    try {
+      const response = await fetch(
+        `${getBackendUrl()}/api/run/${encodeURIComponent(run_id)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
         },
-      },
-    );
+      );
+      
+      clearTimeout(timeoutId);
 
     if (!response.ok) {
       // Propagate backend error shape to the client, similar to /analyze/start
@@ -48,10 +56,26 @@ export async function GET(
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      // Handle abort/timeout errors gracefully
+      if (error instanceof Error && (error.name === "AbortError" || error.message.includes("aborted"))) {
+        logger.warn("Request to backend timed out or was aborted", run_id);
+        return NextResponse.json(
+          {
+            error: "Request timeout",
+            detail: "Backend request took too long. The analysis may still be running.",
+          },
+          { status: 504 }
+        );
+      }
+      logger.error("Error proxying to backend:", error);
+      return handleFetchError(error);
+    }
   } catch (error) {
-    logger.error("Error proxying to backend:", error);
+    logger.error("Error in run route:", error);
     return handleFetchError(error);
   }
 }

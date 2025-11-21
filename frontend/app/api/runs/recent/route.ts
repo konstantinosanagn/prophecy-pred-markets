@@ -8,15 +8,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get("limit") || "20";
 
-    const response = await fetch(
-      `${getBackendUrl()}/api/runs/recent?limit=${encodeURIComponent(limit)}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+    // Add timeout to prevent hanging requests (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    try {
+      const response = await fetch(
+        `${getBackendUrl()}/api/runs/recent?limit=${encodeURIComponent(limit)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
         },
-      },
-    );
+      );
+      
+      clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await parseErrorResponse(response);
@@ -34,10 +42,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      // Handle abort/timeout errors gracefully
+      if (error instanceof Error && (error.name === "AbortError" || error.message.includes("aborted"))) {
+        logger.warn("Request to backend timed out or was aborted");
+        return NextResponse.json(
+          {
+            error: "Request timeout",
+            detail: "Backend request took too long.",
+          },
+          { status: 504 }
+        );
+      }
+      logger.error("Error proxying to backend:", error);
+      return handleFetchError(error);
+    }
   } catch (error) {
-    logger.error("Error proxying to backend:", error);
+    logger.error("Error in recent runs route:", error);
     return handleFetchError(error);
   }
 }

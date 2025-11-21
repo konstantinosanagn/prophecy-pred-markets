@@ -7,13 +7,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const response = await fetch(`${getBackendUrl()}/api/analyze/start`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    // Add timeout to prevent hanging requests (10 seconds for starting analysis)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    try {
+      const response = await fetch(`${getBackendUrl()}/api/analyze/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await parseErrorResponse(response);
@@ -34,9 +42,25 @@ export async function POST(request: NextRequest) {
       logger.error("[Next.js API] Missing run_id in backend response:", data);
     }
     
-    return NextResponse.json(data);
+      return NextResponse.json(data);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      // Handle abort/timeout errors gracefully
+      if (error instanceof Error && (error.name === "AbortError" || error.message.includes("aborted"))) {
+        logger.warn("Request to backend timed out or was aborted");
+        return NextResponse.json(
+          {
+            error: "Request timeout",
+            detail: "Backend request took too long to start analysis.",
+          },
+          { status: 504 }
+        );
+      }
+      logger.error("Error proxying to backend:", error);
+      return handleFetchError(error);
+    }
   } catch (error) {
-    logger.error("Error proxying to backend:", error);
+    logger.error("Error in analyze start route:", error);
     return handleFetchError(error);
   }
 }

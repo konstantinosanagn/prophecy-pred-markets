@@ -62,8 +62,57 @@ async def _search_news_impl_async(
             headers={"Content-Type": "application/json"},
             json=payload,
         ) as response:
-            response.raise_for_status()
-            return await response.json()
+            # Read response body first to capture error details
+            response_text = await response.text()
+            
+            if not response.ok:
+                # Try to parse error details from response
+                error_details = {}
+                try:
+                    import json
+                    error_details = json.loads(response_text) if response_text else {}
+                except Exception:
+                    error_details = {"raw_response": response_text[:500] if response_text else "Empty response"}
+                
+                # Log detailed error information
+                logger.error(
+                    "Tavily API error",
+                    status=response.status,
+                    status_text=response.reason,
+                    error_details=error_details,
+                    query=query,
+                    api_key_prefix=TAVILY_API_KEY[:8] if TAVILY_API_KEY else None,
+                    response_length=len(response_text) if response_text else 0,
+                )
+                
+                # For 432 errors, provide more helpful error message
+                if response.status == 432:
+                    error_msg = (
+                        error_details.get("error") 
+                        or error_details.get("message") 
+                        or error_details.get("detail")
+                        or "Unknown error (HTTP 432)"
+                    )
+                    raise ValueError(
+                        f"Tavily API error 432: {error_msg}. "
+                        "This usually indicates an invalid API key, expired subscription, rate limit exceeded, or account issue. "
+                        f"Response body: {response_text[:500] if response_text else 'Empty response'}"
+                    )
+                
+                # Raise with more context for other errors
+                response.raise_for_status()
+            
+            # Parse successful response
+            try:
+                import json
+                return json.loads(response_text) if response_text else {}
+            except Exception as parse_error:
+                logger.error(
+                    "Failed to parse Tavily response as JSON",
+                    error=str(parse_error),
+                    response_preview=response_text[:200] if response_text else "Empty",
+                )
+                raise
 
 
 async def search_news(
@@ -82,7 +131,10 @@ async def search_news(
     """
     if not TAVILY_API_KEY:
         # Fail soft: let the caller fall back to placeholder content.
-        logger.warning("TAVILY_API_KEY not configured")
+        logger.warning(
+            "TAVILY_API_KEY not configured - Tavily searches will return empty results",
+            query=query,
+        )
         return {"answer": "", "articles": []}
 
     # Create cache key (include search_depth for future cache differentiation)

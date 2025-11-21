@@ -2,15 +2,8 @@
 
 from __future__ import annotations
 
-from app.agents.event_agent import run_event_agent
-from app.agents.market_agent import run_market_agent
-from app.agents.news_agent import run_news_agent
-from app.agents.news_summary_agent import run_news_summary_agent
-from app.agents.prob_agent import run_prob_agent
-from app.agents.report_agent import run_report_agent
+from app.agents.graph import run_analysis_graph
 from app.agents.state import AgentState
-from app.agents.strategy_agent import run_strategy_agent
-from app.agents.tavily_prompt_agent import run_tavily_prompt_agent
 from app.core.logging_config import get_logger
 from app.schemas import AnalyzeRequest
 from app.services.run_snapshot import (
@@ -53,17 +46,19 @@ async def run_analysis_for_run_id(run_id: str, req: AnalyzeRequest) -> None:
             else {},
         }
 
-        logger.info("Starting phased analysis", run_id=run_id)
+        logger.info("Starting phased analysis with LangGraph", run_id=run_id)
 
-        # PHASE 1: Market + Event
-        logger.debug("Phase 1: Market and Event", run_id=run_id)
-        state = await run_market_agent(state)
-        state = await run_event_agent(state)
-
-        # Check if market selection is required
+        # Use LangGraph to run the analysis, but intercept at key points to update DB
+        # We'll use the graph's stream or invoke with callbacks to update phases
+        
+        # Run the graph - it will execute all agents in the correct order
+        state = await run_analysis_graph(state)
+        
+        # After graph execution, update database phases based on state
+        
+        # Check if market selection is required (graph handles this, but we need to update DB)
         if state.get("requires_market_selection"):
             logger.info("Market selection required", run_id=run_id)
-            # Update run with event context and market options (but not market snapshot)
             try:
                 await update_run_phase_async(
                     run_id,
@@ -105,34 +100,34 @@ async def run_analysis_for_run_id(run_id: str, req: AnalyzeRequest) -> None:
                 error=str(db_error),
                 exc_info=True,
             )
-            # Continue - analysis can proceed without DB updates
 
-        logger.debug("Phase 1 completed", run_id=run_id)
+        logger.debug("Phase 1 (Market/Event) completed", run_id=run_id)
 
-        # PHASE 2: Tavily prompt + News + News summary
-        logger.debug("Phase 2: News pipeline", run_id=run_id)
-        # Skip tavily_prompt_agent if disabled in configuration
-        config = state.get("config", {})
-        if config.get("use_tavily_prompt_agent", True):
-            state = await run_tavily_prompt_agent(state)
-        else:
-            logger.debug("Tavily prompt agent skipped (disabled in configuration)", run_id=run_id)
-        state = await run_news_agent(state)
-        # Skip news_summary_agent if disabled in configuration
-        if config.get("use_news_summary_agent", True):
-            state = await run_news_summary_agent(state)
-        else:
-            logger.debug("News summary agent skipped (disabled in configuration)", run_id=run_id)
-
-        # Update run with news context
+        # Update run with news context (graph has already run news agents)
+        news_context = state.get("news_context", {})
+        articles_count = len(news_context.get("articles", [])) if news_context else 0
+        
+        logger.info(
+            "Updating news phase in database",
+            run_id=run_id,
+            has_news_context=bool(news_context),
+            articles_count=articles_count,
+            has_summary=bool(news_context.get("summary") or news_context.get("combined_summary")),
+        )
+        
         try:
             await update_run_phase_async(
                 run_id,
                 "news",
                 "done",
                 {
-                    "news_context": state.get("news_context", {}),
+                    "news_context": news_context,
                 },
+            )
+            logger.info(
+                "News phase updated in database",
+                run_id=run_id,
+                articles_count=articles_count,
             )
         except Exception as db_error:
             logger.warning(
@@ -141,15 +136,8 @@ async def run_analysis_for_run_id(run_id: str, req: AnalyzeRequest) -> None:
                 error=str(db_error),
                 exc_info=True,
             )
-            # Continue - analysis can proceed without DB updates
 
-        logger.debug("Phase 2 completed", run_id=run_id)
-
-        # PHASE 3: Probability + Strategy + Report
-        logger.debug("Phase 3: Signal and Report", run_id=run_id)
-        state = await run_prob_agent(state)
-        state = await run_strategy_agent(state)
-        state = await run_report_agent(state)
+        logger.debug("Phase 2 (News) completed", run_id=run_id)
 
         # Serialize signal if it's a Pydantic model
         signal_raw = state.get("signal", {})
@@ -162,7 +150,7 @@ async def run_analysis_for_run_id(run_id: str, req: AnalyzeRequest) -> None:
         else:
             signal = {}
 
-        # Update run with signal, decision, and report
+        # Update run with signal, decision, and report (graph has already run these agents)
         try:
             await update_run_phase_async(
                 run_id,
@@ -189,9 +177,8 @@ async def run_analysis_for_run_id(run_id: str, req: AnalyzeRequest) -> None:
                 error=str(db_error),
                 exc_info=True,
             )
-            # Continue - analysis can proceed without DB updates
 
-        logger.debug("Phase 3 completed", run_id=run_id)
+        logger.debug("Phase 3 (Signal/Report) completed", run_id=run_id)
 
         # Final persistence (for backward compatibility and trace support)
         try:

@@ -33,30 +33,83 @@ export default function RecentSessions({
 
     setIsLoading(true);
     setError(null);
+    
+    // Add timeout to prevent hanging requests (30 seconds)
+    const timeoutId = setTimeout(() => {
+      if (!abortController.signal.aborted) {
+        abortController.abort();
+      }
+    }, 30000);
+    
     try {
       const response = await fetch("/api/runs/recent?limit=20", {
         signal: abortController.signal,
       });
+      
+      clearTimeout(timeoutId);
+      
+      // Check if request was aborted before processing response
+      if (abortController.signal.aborted) {
+        return;
+      }
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        // Try to parse error response, but handle cases where response body might be empty
+        let errorData: any = {};
+        try {
+          const text = await response.text();
+          if (text) {
+            errorData = JSON.parse(text);
+          }
+        } catch {
+          // If parsing fails, use status text or default message
+          errorData = { error: response.statusText || `HTTP ${response.status}` };
+        }
+        
+        // Check again if aborted after async operations
+        if (abortController.signal.aborted) {
+          return;
+        }
+        
         throw new Error(
-          errorData.detail || errorData.error || "Failed to fetch recent runs",
+          errorData.detail || errorData.error || `Failed to fetch recent runs (${response.status})`,
         );
       }
+      
       const data = await response.json();
+      
       // Only update state if request wasn't aborted
       if (!abortController.signal.aborted) {
         setRuns(data.runs || []);
       }
     } catch (err) {
-      // Ignore abort errors
-      if (err instanceof Error && err.name === "AbortError") {
+      // Clear timeout if error occurs
+      clearTimeout(timeoutId);
+      // Check if request was aborted - this includes AbortError and DOMException with "terminated" message
+      if (
+        abortController.signal.aborted ||
+        (err instanceof Error && (
+          err.name === "AbortError" ||
+          err.message === "terminated" ||
+          err.message.includes("aborted")
+        )) ||
+        (err instanceof DOMException && err.name === "AbortError")
+      ) {
+        // Silently ignore abort errors
         return;
       }
+      
       // Only set error if request wasn't aborted
       if (!abortController.signal.aborted) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load recent sessions";
+        let errorMessage = "Failed to load recent sessions";
+        if (err instanceof Error) {
+          // Don't show "terminated" as error message - it's not user-friendly
+          if (err.message === "terminated" || err.message.includes("aborted")) {
+            errorMessage = "Request was cancelled";
+          } else {
+            errorMessage = err.message;
+          }
+        }
         setError(errorMessage);
         console.error("Error fetching recent runs:", err);
       }

@@ -539,6 +539,17 @@ export default function Background(_props: PropsWithChildren): React.JSX.Element
             
             if (run.status?.news === "done" && run.news_context) {
               updatedResults.news_context = run.news_context;
+              // Debug logging for news context
+              const articlesCount = Array.isArray(run.news_context.articles) 
+                ? run.news_context.articles.length 
+                : 0;
+              logger.debug(
+                "News context received from backend",
+                run.run_id,
+                `articles: ${articlesCount}`,
+                `has_summary: ${!!run.news_context.summary}`,
+                `keys: ${Object.keys(run.news_context).join(", ")}`,
+              );
             }
             
             if (run.status?.signal === "done" && run.signal) {
@@ -619,8 +630,17 @@ export default function Background(_props: PropsWithChildren): React.JSX.Element
   // Map backend news articles to NewsCard format
   const mapNewsArticles = useCallback((newsContext?: NewsContext) => {
     if (!newsContext?.articles || !Array.isArray(newsContext.articles) || newsContext.articles.length === 0) {
+      logger.debug(
+        "No articles to map",
+        `has_context: ${!!newsContext}`,
+        `articles_type: ${typeof newsContext?.articles}`,
+        `articles_length: ${newsContext?.articles?.length ?? 0}`,
+        `is_array: ${Array.isArray(newsContext?.articles)}`,
+      );
       return [];
     }
+    
+    logger.debug("Mapping news articles", `count: ${newsContext.articles.length}`);
 
     return newsContext.articles.map((article) => ({
       title: article.title || "Untitled",
@@ -761,21 +781,26 @@ export default function Background(_props: PropsWithChildren): React.JSX.Element
                 })()}
 
                     {/* News - show skeleton if pending, card if done */}
-                    {runStatus?.news === "done" && results.news_context && results.news_context.articles && results.news_context.articles.length > 0 ? (
-                      <div className="mb-6">
-                        <NewsCard
-                          heading="Market News & Analysis"
-                          highlights={mapNewsArticles(results.news_context)}
-                          isLoading={false}
-                          newsSummary={results.news_context.summary}
-                          combinedSummary={results.news_context.combined_summary}
-                          onItemClick={(item) => {
-                            if (item.url) {
-                              window.open(item.url, "_blank", "noopener,noreferrer");
-                            }
-                          }}
-                        />
-                      </div>
+                    {runStatus?.news === "done" && results.news_context ? (
+                      // Show card if we have articles, summary, or combined_summary
+                      (results.news_context.articles && Array.isArray(results.news_context.articles) && results.news_context.articles.length > 0) ||
+                      (results.news_context.summary && results.news_context.summary.trim().length > 0) ||
+                      (results.news_context.combined_summary && results.news_context.combined_summary.trim().length > 0) ? (
+                        <div className="mb-6">
+                          <NewsCard
+                            heading="Market News & Analysis"
+                            highlights={mapNewsArticles(results.news_context)}
+                            isLoading={false}
+                            newsSummary={results.news_context.summary}
+                            combinedSummary={results.news_context.combined_summary}
+                            onItemClick={(item) => {
+                              if (item.url) {
+                                window.open(item.url, "_blank", "noopener,noreferrer");
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : null
                     ) : runStatus?.news === "pending" || runStatus?.news === undefined ? (
                       <div className="mb-6">
                         <NewsSkeleton />
