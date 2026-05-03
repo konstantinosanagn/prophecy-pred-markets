@@ -80,6 +80,7 @@ def build_kalshi_market_snapshot(market: KalshiMarket) -> Dict[str, Any]:
         "volume": market.volume,
         "volume_24h": market.volume_24h,
         "open_interest": market.open_interest,
+        "liquidity": market.open_interest,  # frontend reads `liquidity` for venue=kalshi (label = OPEN INTEREST)
         "close_time": market.close_time.isoformat() if market.close_time else None,
     }
 
