@@ -321,6 +321,7 @@ local_settings.py
 # -----------------------------------------------------------------------------
 docs/kalshi-tavily-overview.md
 docs/plans/
+docs/superpowers/
 
 # -----------------------------------------------------------------------------
 # Editor/tool configs
