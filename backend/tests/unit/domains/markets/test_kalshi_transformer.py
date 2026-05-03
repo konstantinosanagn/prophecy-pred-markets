@@ -208,3 +208,14 @@ def test_snapshot_preserves_other_existing_fields():
     assert snapshot["volume"] == 12345
     assert snapshot["volume_24h"] == 678
     assert snapshot["status"] == "active"
+
+
+def test_snapshot_includes_venue_kalshi():
+    """Snapshot must carry an explicit venue marker so downstream report
+    rendering (templates.py) can pick the right label + unit per venue."""
+    from app.domains.markets.kalshi_transformer import build_kalshi_market_snapshot
+
+    market = _build_market(open_interest=300)
+    snapshot = build_kalshi_market_snapshot(market)
+
+    assert snapshot["venue"] == "kalshi"

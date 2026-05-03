@@ -66,6 +66,7 @@ def build_kalshi_market_snapshot(market: KalshiMarket) -> Dict[str, Any]:
     yes_price = _calculate_yes_price(market)
 
     return {
+        "venue": "kalshi",
         "ticker": market.ticker,
         "event_ticker": market.event_ticker,
         "title": market.title,
