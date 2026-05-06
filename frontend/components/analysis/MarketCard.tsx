@@ -209,7 +209,7 @@ export function MarketCard(props: MarketSnapshotProps) {
   return (
     <div
       id="market-snapshot-card"
-      className="relative rounded-lg bg-glass border border-ring shadow-soft backdrop-blur-glass p-5 overflow-visible"
+      className="relative z-10 rounded-lg bg-glass border border-ring shadow-soft backdrop-blur-glass p-5 overflow-visible"
     >
       <div
         className="absolute inset-0 rounded-lg pointer-events-none"
