@@ -120,14 +120,13 @@ def build_market_snapshot(
         if end_date_str:
             end_date = parse_end_date(end_date_str)
 
-    if not end_date:
-        end_date = datetime.now(timezone.utc).replace(microsecond=0)
-
-    # Format end_date as ISO string
+    # If end_date is genuinely missing, leave it None — the frontend renders
+    # "—" for null. Defaulting to datetime.now() used to render "Closes in 0 min"
+    # on every market whose Pydantic-validated endDate didn't survive parsing.
     if isinstance(end_date, datetime):
         end_date_iso = end_date.isoformat().replace("+00:00", "Z")
     else:
-        end_date_iso = str(end_date)
+        end_date_iso = None
 
     # Extract volume and liquidity from API
     volume = (

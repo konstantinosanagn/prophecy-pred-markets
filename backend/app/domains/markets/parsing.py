@@ -74,14 +74,22 @@ def normalize_number(v: Any) -> Optional[float]:
         return None
 
 
-def parse_end_date(value: Optional[str]) -> Optional[datetime]:
-    """Parse ISO date string to datetime."""
-    if not value:
+def parse_end_date(value: Any) -> Optional[datetime]:
+    """Parse a value (ISO string or datetime) to a datetime.
+
+    Pydantic Market.endDate is typed `datetime`, so model_dump() can hand us a
+    datetime object directly; older paths still pass ISO strings. Accept both
+    rather than silently returning None and triggering the caller's fallback.
+    """
+    if value is None or value == "":
         return None
+    if isinstance(value, datetime):
+        return value
     try:
-        if value.endswith("Z"):
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return datetime.fromisoformat(value)
+        s = str(value)
+        if s.endswith("Z"):
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return datetime.fromisoformat(s)
     except Exception:
         return None
 
