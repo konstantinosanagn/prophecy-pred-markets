@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Prophily - Tavily Kalshi Signals",
+  title: "Prophecy - Prediction Market Intelligence Layer",
   description: "Dashboard for multi-agent Kalshi market signals powered by Tavily.",
 };
 

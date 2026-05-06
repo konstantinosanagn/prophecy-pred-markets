@@ -63,7 +63,7 @@ const VENUE_META = {
   },
   kalshi: {
     name: "Kalshi",
-    favicon: "https://kalshi.com/favicon.ico",
+    favicon: "https://www.google.com/s2/favicons?domain=kalshi.com&sz=32",
     volumeUnit: "contracts",
     liquidityUnit: "OI",
   },

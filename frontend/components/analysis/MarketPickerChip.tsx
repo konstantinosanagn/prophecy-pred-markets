@@ -14,7 +14,7 @@ type VenueMeta = {
 
 const VENUE_META: Record<"polymarket" | "kalshi", VenueMeta> = {
   polymarket: { name: "Polymarket", favicon: "https://polymarket.com/favicon.ico" },
-  kalshi: { name: "Kalshi", favicon: "https://kalshi.com/favicon.ico" },
+  kalshi: { name: "Kalshi", favicon: "https://www.google.com/s2/favicons?domain=kalshi.com&sz=32" },
 };
 
 type Props = {
@@ -103,7 +103,7 @@ export default function MarketPickerChip({
 
       {open && others.length > 0 && (
         <div
-          className="absolute left-0 right-0 z-20 rounded p-1 bg-glass-strong border border-ring shadow-soft backdrop-blur-glass"
+          className="absolute left-0 right-0 z-50 rounded p-1 bg-[var(--bg)] border border-ring shadow-soft"
           style={{ top: "calc(100% + 4px)", maxHeight: 260, overflow: "auto" }}
         >
           <div

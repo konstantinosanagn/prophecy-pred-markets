@@ -59,8 +59,8 @@ function MarketGridCard({
 }) {
   const askVal = typeof m.best_ask === "number" ? m.best_ask : undefined;
   const bidVal = typeof m.best_bid === "number" ? m.best_bid : undefined;
-  const ask = typeof askVal === "number" ? askVal.toFixed(2) : "—";
-  const bid = typeof bidVal === "number" ? bidVal.toFixed(2) : "—";
+  const ask = typeof askVal === "number" ? askVal.toFixed(3) : "—";
+  const bid = typeof bidVal === "number" ? bidVal.toFixed(3) : "—";
   const mid =
     typeof bidVal === "number" && typeof askVal === "number"
       ? (bidVal + askVal) / 2
