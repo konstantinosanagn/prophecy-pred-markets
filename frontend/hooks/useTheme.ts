@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { THEME_COOKIE, type Theme } from "../lib/theme";
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-const USER_OVERRIDE_FLAG = "prophily-theme-explicit";
+const USER_OVERRIDE_FLAG = "prophecy-theme-explicit";
 
 function readDatasetTheme(): Theme {
   if (typeof document === "undefined") return "atelier";

@@ -20,7 +20,7 @@ jest.mock("next/font/google", () => ({
 // Mock the theme cookie helper so tests don't try to read real cookies.
 jest.mock("../../lib/theme-cookie", () => ({
   getServerTheme: jest.fn(async () => null),
-  THEME_COOKIE: "prophily-theme",
+  THEME_COOKIE: "prophecy-theme",
 }), { virtual: true });
 
 // Mock globals.css import

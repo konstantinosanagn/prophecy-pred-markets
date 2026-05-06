@@ -2,19 +2,19 @@
 """Custom exceptions for the application."""
 
 
-class ProphilyError(Exception):
+class ProphecyError(Exception):
     """Base exception for all application errors."""
 
     pass
 
 
-class ConfigurationError(ProphilyError):
+class ConfigurationError(ProphecyError):
     """Raised when configuration is invalid or missing."""
 
     pass
 
 
-class ExternalAPIError(ProphilyError):
+class ExternalAPIError(ProphecyError):
     """Raised when an external API call fails."""
 
     pass
@@ -56,13 +56,13 @@ class OpenAIAPIError(ExternalAPIError):
     pass
 
 
-class DatabaseError(ProphilyError):
+class DatabaseError(ProphecyError):
     """Raised when database operation fails."""
 
     pass
 
 
-class ValidationError(ProphilyError):
+class ValidationError(ProphecyError):
     """Raised when data validation fails."""
 
     pass

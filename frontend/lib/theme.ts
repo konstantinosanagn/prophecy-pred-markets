@@ -6,4 +6,4 @@
 
 export type Theme = "atelier" | "obsidian";
 
-export const THEME_COOKIE = "prophily-theme";
+export const THEME_COOKIE = "prophecy-theme";

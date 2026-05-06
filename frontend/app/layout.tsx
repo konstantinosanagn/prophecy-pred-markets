@@ -25,7 +25,7 @@ export const metadata = {
 const themeBootstrap = `
 (function(){
   try {
-    var hasCookie = document.cookie.indexOf('prophily-theme=') !== -1;
+    var hasCookie = document.cookie.indexOf('prophecy-theme=') !== -1;
     if (hasCookie) return;
     var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = dark ? 'obsidian' : 'atelier';
